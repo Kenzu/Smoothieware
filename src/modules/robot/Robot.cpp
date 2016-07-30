@@ -227,6 +227,7 @@ void Robot::load_config()
     // initialise actuator positions to current cartesian position (X0 Y0 Z0)
     // so the first move can be correct if homing is not performed
     ActuatorCoordinates actuator_pos;
+
     arm_solution->cartesian_to_actuator(last_milestone, actuator_pos);
     for (size_t i = 0; i < n_motors; i++)
         actuators[i]->change_last_milestone(actuator_pos[i]);
@@ -359,6 +360,12 @@ void Robot::on_gcode_received(void *argument)
 
     enum MOTION_MODE_T motion_mode= NONE;
 
+    ActuatorCoordinates current_pos{
+        actuators[X_AXIS]->get_current_position(),
+        actuators[Y_AXIS]->get_current_position(),
+        actuators[Z_AXIS]->get_current_position()
+    };
+
     if( gcode->has_g) {
         switch( gcode->g ) {
             case 0:  motion_mode = SEEK;    break;
@@ -434,6 +441,17 @@ void Robot::on_gcode_received(void *argument)
                     current_wcs += gcode->subcode;
                     if(current_wcs >= MAX_WCS) current_wcs = MAX_WCS - 1;
                 }
+                break;
+
+            case 360:
+                while(fabs(current_pos[X_AXIS]) > 180)
+                {
+                    if(current_pos[X_AXIS] > 0)
+                        current_pos[X_AXIS] -= 360;
+                    else
+                        current_pos[X_AXIS] += 360;
+                }
+                reset_actuator_position(current_pos);
                 break;
 
             case 90: this->absolute_mode = true; this->e_absolute_mode = true; break;
@@ -877,7 +895,7 @@ void Robot::reset_axis_position(float position, int axis)
 }
 
 // similar to reset_axis_position but directly sets the actuator positions in actuators units (eg mm for cartesian, degrees for rotary delta)
-// then sets the axis positions to match. currently only called from Endstops.cpp and RotaryDeltaCalibration.cpp
+// then sets the axis positions to match. currently only called from Endstops.cpp
 void Robot::reset_actuator_position(const ActuatorCoordinates &ac)
 {
     for (size_t i = X_AXIS; i <= Z_AXIS; i++)
@@ -904,6 +922,7 @@ void Robot::reset_position_from_current_actuator_position()
     // now reset actuator::last_milestone, NOTE this may lose a little precision as FK is not always entirely accurate.
     // NOTE This is required to sync the machine position with the actuator position, we do a somewhat redundant cartesian_to_actuator() call
     // to get everything in perfect sync.
+
     arm_solution->cartesian_to_actuator(last_machine_position, actuator_pos);
     for (size_t i = X_AXIS; i <= Z_AXIS; i++)
         actuators[i]->change_last_milestone(actuator_pos[i]);
@@ -969,10 +988,32 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
             }
         }
     }
-
+/*
+    // Try currentX instead
+    float currentX = actuators[X_AXIS]->get_current_position();
+    if(currentX > 400)
+    {
+        currentX -= 360;
+    }
+    else if(currentX < -400)
+    {
+        currentX += 360;
+    }
+    actuators[X_AXIS]->change_last_milestone(currentX);
+*/
     // find actuator position given the machine position, use actual adjusted target
+
     ActuatorCoordinates actuator_pos;
-    arm_solution->cartesian_to_actuator( transformed_target, actuator_pos );
+    arm_solution->cartesian_to_actuator( transformed_target, actuator_pos);
+
+    // if y < 10; e *= 0.90
+    /*
+    if(actuator_pos[Y_AXIS] < 1) {
+        actuators[E_AXIS]->change_last_milestone(transformed_target[E_AXIS]);
+    }
+    */
+
+
 
 #if MAX_ROBOT_ACTUATORS > 3
     sos= 0;

@@ -1,12 +1,12 @@
 PROJECT=main
 BUILD_DIR=../build
-DEVICES?=lpc1768
+DEVICES=lpc1768
 
 # BUILD_TYPE can be set to the following values:
 #  Checked - Optimizations enabled with MRI debug monitor support. (Recommended Type)
 #  Release - Optimizations enabled.
 #  Debug - Optimization disabled with MRI debug monitor support.
-BUILD_TYPE=Checked
+BUILD_TYPE=Release
 
 # Set to 1 to tag each heap allocation with the caller's return address.
 # NOTE: Can't be enabled with latest build as not compatible with newlib nano.
@@ -29,13 +29,13 @@ ENABLE_DEBUG_MONITOR?=0
 
 # this is the default UART baud rate used if it is not set in config
 # it is also the baud rate used to report any errors found while parsing the config file
-DEFAULT_SERIAL_BAUD_RATE?=9600
+DEFAULT_SERIAL_BAUD_RATE?=115200
 
 ifeq "$(ENABLE_DEBUG_MONITOR)" "1"
 # Can add MRI_UART_BAUD=115200 to next line if GDB fails to connect to MRI.
 # Tends to happen on some Linux distros but not Windows and OS X.
 MRI_UART=MRI_UART_0
-MRI_BREAK_ON_INIT=1
+MRI_BREAK_ON_INIT=0
 MRI_SEMIHOST_STDIO=1
 else
 MRI_UART=MRI_UART_0 MRI_UART_SHARE
@@ -70,16 +70,35 @@ else
 export EXCLUDED_MODULES = $(EXCLUDE_MODULES)
 endif
 
+export EXCLUDE_MODULES = tools/drillingcycles tools/filamentdetector tools/laser tools/rotarydeltacalibration tools/scaracal tools/spindle utils/motordrivercontrol utils/panel
+
+# included modules
+# tools:
+#endstops
+#extruder
+#temperaturecontrol
+#temperatureswitch
+#switch
+#toolmanager 
+#zprobe
+# utils:
+#configurator
+#currentcontrol
+#killbutton
+#player
+#PlayLed
+#simpleshell
 
 # set to not compile in any network support
-#export NONETWORK = 1
+export NONETWORK = 1
+export DISABLEMSD = 1
 
 include $(BUILD_DIR)/build.mk
 
 CONSOLE?=/dev/arduino
-BAUD?=9600
+BAUD?=230400
 
-.PHONY: debug-store flash upload debug console dfu
+.PHONY: debug-store flash upload debug console dfu combined
 
 debug-store: ../LPC1768/$(PROJECT).elf
 	cp ../LPC1768/$(PROJECT).elf ../LPC1768/$(PROJECT)_lastupload.elf
@@ -87,8 +106,10 @@ debug-store: ../LPC1768/$(PROJECT).elf
 ../LPC1768/$(PROJECT)-combined.hex: ../LPC1768/$(PROJECT).hex 
 	srec_cat ../bootloader/DFU-Bootloader.hex -Intel $< -Intel -out ../LPC1768/main-combined.hex -Intel
 
+combined: ../LPC1768/$(PROJECT)-combined.hex
+
 flash: ../LPC1768/$(PROJECT)-combined.hex debug-store
-	lpc21isp -wipe $< $(CONSOLE) 115200 12000
+	lpc21isp -wipe $< $(CONSOLE) $(BAUD) 12000
 
 dfu: ../LPC1768/$(PROJECT).bin
 	dfu-util -D $< -R

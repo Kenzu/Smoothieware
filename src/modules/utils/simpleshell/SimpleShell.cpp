@@ -79,9 +79,7 @@ const SimpleShell::ptentry_t SimpleShell::commands_table[] = {
     {"net",      SimpleShell::net_command},
     {"load",     SimpleShell::load_command},
     {"save",     SimpleShell::save_command},
-#ifndef NO_SDCARD
-    {"remount",  SimpleShell::remount_command},
-#endif
+    //{"remount",  SimpleShell::remount_command},
     {"calc_thermistor", SimpleShell::calc_thermistor_command},
     {"thermistors", SimpleShell::print_thermistors_command},
     {"md5sum",   SimpleShell::md5sum_command},
@@ -314,7 +312,7 @@ void SimpleShell::ls_command( string parameters, StreamOutput *stream )
         stream->printf("Could not open directory %s\r\n", path.c_str());
     }
 }
-#ifndef NO_SDCARD
+/*
 extern SDFAT mounter;
 
 void SimpleShell::remount_command( string parameters, StreamOutput *stream )
@@ -322,7 +320,7 @@ void SimpleShell::remount_command( string parameters, StreamOutput *stream )
     mounter.remount();
     stream->printf("remounted\r\n");
 }
-#endif
+*/
 
 // Delete a file
 void SimpleShell::rm_command( string parameters, StreamOutput *stream )
@@ -775,7 +773,11 @@ void SimpleShell::get_command( string parameters, StreamOutput *stream)
             ActuatorCoordinates apos{x, y, z};
             float pos[3];
             THEROBOT->arm_solution->actuator_to_cartesian(apos, pos);
-            stream->printf("cartesian= X %f, Y %f, Z %f\n", pos[0], pos[1], pos[2]);
+            stream->printf("cartesian= X %f, Y %f, Z %f, Steps= A %lu, B %lu, C %lu\n",
+                pos[0], pos[1], pos[2],
+                lroundf(x*THEROBOT->actuators[0]->get_steps_per_mm()),
+                lroundf(y*THEROBOT->actuators[1]->get_steps_per_mm()),
+                lroundf(z*THEROBOT->actuators[2]->get_steps_per_mm()));
             x= pos[0];
             y= pos[1];
             z= pos[2];
@@ -785,7 +787,7 @@ void SimpleShell::get_command( string parameters, StreamOutput *stream)
             float pos[3]{x, y, z};
             ActuatorCoordinates apos;
             THEROBOT->arm_solution->cartesian_to_actuator(pos, apos);
-            stream->printf("actuator= X %f, Y %f, Z %f\n", apos[0], apos[1], apos[2]);
+            stream->printf("actuator= A %f, B %f, C %f\n", apos[0], apos[1], apos[2]);
         }
 
         if(move) {
@@ -983,9 +985,8 @@ void SimpleShell::test_command( string parameters, StreamOutput *stream)
         uint32_t n= strtol(iters.c_str(), NULL, 10);
         float f= speed.empty() ? THEROBOT->get_feed_rate() : strtof(speed.c_str(), NULL);
 
-        THEROBOT->push_state();
         char cmd[64];
-        snprintf(cmd, sizeof(cmd), "G91 G0 X%f Y0 F%f", -r, f);
+        snprintf(cmd, sizeof(cmd), "G0 X%f Y0 F%f", -r, f);
         stream->printf("%s\n", cmd);
         struct SerialMessage message{&StreamOutput::NullStream, cmd};
         THEKERNEL->call_event(ON_CONSOLE_LINE_RECEIVED, &message );
@@ -998,7 +999,6 @@ void SimpleShell::test_command( string parameters, StreamOutput *stream)
             THEKERNEL->call_event(ON_CONSOLE_LINE_RECEIVED, &message );
             THECONVEYOR->wait_for_idle();
         }
-        THEROBOT->pop_state();
         stream->printf("done\n");
 
     }else if (what == "square") {
@@ -1100,9 +1100,7 @@ void SimpleShell::help_command( string parameters, StreamOutput *stream )
     stream->printf("cat file [limit] [-d 10]\r\n");
     stream->printf("rm file\r\n");
     stream->printf("mv file newfile\r\n");
-#ifndef NO_SDCARD
     stream->printf("remount\r\n");
-#endif
     stream->printf("play file [-v]\r\n");
     stream->printf("progress - shows progress of current play\r\n");
     stream->printf("abort - abort currently playing file\r\n");

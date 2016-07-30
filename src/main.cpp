@@ -43,13 +43,16 @@
 
 // Debug
 #include "libs/SerialMessage.h"
-
+/*
 #include "libs/USBDevice/USB.h"
 #include "libs/USBDevice/USBMSD/USBMSD.h"
 #include "libs/USBDevice/USBMSD/SDCard.h"
 #include "libs/USBDevice/USBSerial/USBSerial.h"
 #include "libs/USBDevice/DFU.h"
 #include "libs/SDFAT.h"
+*/
+#include "libs/gpio.h"
+
 #include "StreamOutputPool.h"
 #include "ToolManager.h"
 
@@ -61,22 +64,18 @@
 
 #include "mbed.h"
 
-#define second_usb_serial_enable_checksum  CHECKSUM("second_usb_serial_enable")
-#define disable_msd_checksum  CHECKSUM("msd_disable")
-#define dfu_enable_checksum  CHECKSUM("dfu_enable")
+//#define second_usb_serial_enable_checksum  CHECKSUM("second_usb_serial_enable")
+//#define disable_msd_checksum  CHECKSUM("msd_disable")
+//#define dfu_enable_checksum  CHECKSUM("dfu_enable")
 #define watchdog_timeout_checksum  CHECKSUM("watchdog_timeout")
 
 
 // USB Stuff
-#ifndef NO_SDCARD
-SDCard sd  __attribute__ ((section ("AHBSRAM0"))) (P0_9, P0_8, P0_7, P0_6);      // this selects SPI1 as the sdcard as it is on Smoothieboard
+//SDCard sd  __attribute__ ((section ("AHBSRAM0"))) (P0_9, P0_8, P0_7, P0_6);      // this selects SPI1 as the sdcard as it is on Smoothieboard
 //SDCard sd(P0_18, P0_17, P0_15, P0_16);  // this selects SPI0 as the sdcard
 //SDCard sd(P0_18, P0_17, P0_15, P2_8);  // this selects SPI0 as the sdcard witrh a different sd select
-#else
-    // No SDCARD, NO MSD
-    #define DISABLEMSD
-#endif
 
+/*
 USB u __attribute__ ((section ("AHBSRAM0")));
 USBSerial usbserial __attribute__ ((section ("AHBSRAM0"))) (&u);
 #ifndef DISABLEMSD
@@ -85,10 +84,9 @@ USBMSD msc __attribute__ ((section ("AHBSRAM0"))) (&u, &sd);
 USBMSD *msc= NULL;
 #endif
 
-#ifndef NO_SDCARD
 SDFAT mounter __attribute__ ((section ("AHBSRAM0"))) ("sd", &sd);
-#endif
-
+*/
+/*
 GPIO leds[5] = {
     GPIO(P1_18),
     GPIO(P1_19),
@@ -96,14 +94,17 @@ GPIO leds[5] = {
     GPIO(P1_21),
     GPIO(P4_28)
 };
+*/
 
 void init() {
 
     // Default pins to low status
+    /*
     for (int i = 0; i < 5; i++){
         leds[i].output();
         leds[i]= 0;
     }
+    */
 
     Kernel* kernel = new Kernel();
 
@@ -113,21 +114,14 @@ void init() {
 #ifdef CNC
     kernel->streams->printf("  CNC Build\r\n");
 #endif
-
-    #ifndef NO_SDCARD
-        bool sdok= (sd.disk_initialize() == 0);
-        if(!sdok) kernel->streams->printf("SDCard failed to initialize\r\n");
-    #else
-        bool sdok = false;
-        kernel->streams->printf("SDCARD is disabled\r\n");
-    #endif
-
+/*
+    bool sdok= (sd.disk_initialize() == 0);
+    if(!sdok) kernel->streams->printf("SDCard failed to initialize\r\n");
+*/
     #ifdef NONETWORK
         kernel->streams->printf("NETWORK is disabled\r\n");
     #endif
-
-// TODO: Clean this up
-#ifndef NO_SDCARD
+/*
 #ifdef DISABLEMSD
     // attempt to be able to disable msd in config
     if(sdok && !kernel->config->value( disable_msd_checksum )->by_default(false)->as_bool()){
@@ -141,10 +135,7 @@ void init() {
         kernel->streams->printf("MSD is disabled\r\n");
     }
 #endif
-#else
-    msc= NULL;
-    kernel->streams->printf("MSD is disabled\r\n");
-#endif
+*/
 
     // Create and add main modules
     kernel->add_module( new(AHB0) Player() );
@@ -210,8 +201,8 @@ void init() {
     kernel->add_module( new MotorDriverControl(0) );
     #endif
     // Create and initialize USB stuff
-    u.init();
-
+    // u.init();
+/*
 #ifdef DISABLEMSD
     if(sdok && msc != NULL){
         kernel->add_module( msc );
@@ -219,8 +210,9 @@ void init() {
 #else
     kernel->add_module( &msc );
 #endif
-
-    kernel->add_module( &usbserial );
+*/
+    // kernel->add_module( &usbserial );
+    /*
     if( kernel->config->value( second_usb_serial_enable_checksum )->by_default(false)->as_bool() ){
         kernel->add_module( new(AHB0) USBSerial(&u) );
     }
@@ -228,6 +220,7 @@ void init() {
     if( kernel->config->value( dfu_enable_checksum )->by_default(false)->as_bool() ){
         kernel->add_module( new(AHB0) DFU(&u));
     }
+    */
 
     // 10 second watchdog timeout (or config as seconds)
     float t= kernel->config->value( watchdog_timeout_checksum )->by_default(10.0F)->as_number();
@@ -240,7 +233,7 @@ void init() {
     }
 
 
-    kernel->add_module( &u );
+    //kernel->add_module( &u );
 
     // memory before cache is cleared
     //SimpleShell::print_mem(kernel->streams);
@@ -248,12 +241,14 @@ void init() {
     // clear up the config cache to save some memory
     kernel->config->config_cache_clear();
 
+    /*
     if(kernel->is_using_leds()) {
         // set some leds to indicate status... led0 init done, led1 mainloop running, led2 idle loop running, led3 sdcard ok
         leds[0]= 1; // indicate we are done with init
-        leds[3]= sdok?1:0; // 4th led indicates sdcard is available (TODO maye should indicate config was found)
+        //leds[3]= sdok?1:0; // 4th led indicates sdcard is available (TODO maye should indicate config was found)
     }
-
+    */
+/*
     if(sdok) {
         // load config override file if present
         // NOTE only Mxxx commands that set values should be put in this file. The file is generated by M500
@@ -271,7 +266,7 @@ void init() {
             fclose(fp);
         }
     }
-
+*/
     // start the timers and interrupts
     THEKERNEL->conveyor->start(THEROBOT->get_number_registered_motors());
     THEKERNEL->step_ticker->start();
@@ -282,13 +277,15 @@ int main()
 {
     init();
 
-    uint16_t cnt= 0;
+    //uint16_t cnt= 0;
     // Main loop
     while(1){
+        /*
         if(THEKERNEL->is_using_leds()) {
             // flash led 2 to show we are alive
             leds[1]= (cnt++ & 0x1000) ? 1 : 0;
         }
+        */
         THEKERNEL->call_event(ON_MAIN_LOOP);
         THEKERNEL->call_event(ON_IDLE);
     }
