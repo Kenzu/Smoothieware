@@ -988,23 +988,37 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
             }
         }
     }
-/*
-    // Try currentX instead
-    float currentX = actuators[X_AXIS]->get_current_position();
-    if(currentX > 400)
-    {
-        currentX -= 360;
-    }
-    else if(currentX < -400)
-    {
-        currentX += 360;
-    }
-    actuators[X_AXIS]->change_last_milestone(currentX);
-*/
+
+	ActuatorCoordinates actuator_pos;
+	
+    arm_solution->cartesian_to_actuator( transformed_target, actuator_pos);
+    // Allow crossing 180 degree barrier
+    //float theta_target = actuator[ALPHA_STEPPER];
+	float alpha_target = actuator_pos[0];
+	float alpha_position = actuators[0]->get_current_position();
+	//THEKERNEL->streams->printf("ok Current: %f, Target: %f\n", alpha_position, alpha_target);
+	if (fabs(alpha_target-alpha_position) > 180)
+	{
+		//THEKERNEL->streams->printf("ok Current: %f, Target: %f\n", alpha_position, alpha_target);
+		if (alpha_target > 0)
+		{
+			alpha_target -= 360;
+			THEKERNEL->streams->printf("ok New target -360: %f, position: %f\n", alpha_target, alpha_position);
+		}
+		else 
+		{
+			alpha_target += 360;
+			THEKERNEL->streams->printf("ok New target +360: %f, position: %f\n", alpha_target, alpha_position);
+		}
+		actuators[0]->change_last_milestone(alpha_target);
+		
+		//arm_solution->actuator_to_cartesian( actuator_pos, transformed_target);
+	}
+	//actuator_pos[0]
     // find actuator position given the machine position, use actual adjusted target
 
-    ActuatorCoordinates actuator_pos;
-    arm_solution->cartesian_to_actuator( transformed_target, actuator_pos);
+    //ActuatorCoordinates actuator_pos;
+    //arm_solution->cartesian_to_actuator( transformed_target, actuator_pos);
 
     // if y < 10; e *= 0.90
     /*

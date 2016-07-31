@@ -10,14 +10,16 @@
 //#include "Gcode.h"
 //#include "SerialMessage.h"
 //#include "Conveyor.h"
-//#include "Robot.h"
-//#include "StepperMotor.h"
+#include "Robot.h"
+#include "StepperMotor.h"
 
 #include "libs/nuts_bolts.h"
 
 #include "libs/Config.h"
 
 #define PI 3.14159265358979323846F // force to be float, do not use M_PI
+//#define SQ(x) powf(x, 2)
+//#define ROUND(x, y) (roundf(x * (float)(1e ## y)) / (float)(1e ## y))
 #define arm_length_checksum          CHECKSUM("arm_length")
 
 BipolarSolution::BipolarSolution(Config* config)
@@ -47,11 +49,14 @@ void BipolarSolution::cartesian_to_actuator( const float cartesian_mm[], Actuato
     else
     {
 		//Convert a set of cartesian coordinates (in mm) to bipolar coordinates (in degrees).
-		float theta2 = 2 * asinf( sqrtf(x*x+y*y) / (2*arm_length) );
+		float theta2 = 2 * asinf(sqrtf(x*x+y*y) / (2 * arm_length) );
 		float theta1 = (PI-theta2)/2 - atan2f(y,x);
-		//Convert from radians to degrees		
-		actuator_mm[ALPHA_STEPPER] = to_degrees(theta1);
-        actuator_mm[BETA_STEPPER ] = to_degrees(theta2);
+		//Convert from radians to degrees
+		float theta1_target = to_degrees(theta1);
+		float theta2_target = to_degrees(theta2);
+		//THEKERNEL->streams->printf("ok Current: %f, Target: %f\n", alpha_position, alpha_target);
+        actuator_mm[ALPHA_STEPPER] = theta1_target;
+        actuator_mm[BETA_STEPPER ] = theta2_target;
         actuator_mm[GAMMA_STEPPER] = z;
 	}
 }
@@ -89,11 +94,11 @@ void BipolarSolution::actuator_to_cartesian( const ActuatorCoordinates &actuator
 }
 
 float BipolarSolution::to_degrees(float radians) {
-    return radians * (180.0F/PI);
+    return radians * (180.0f/PI);
 }
 
 float BipolarSolution::to_radians(float degrees) {
-    return degrees * (PI/180.0F);
+    return degrees * (PI/180.0f);
 }
 
 bool BipolarSolution::set_optional(const arm_options_t& options)
