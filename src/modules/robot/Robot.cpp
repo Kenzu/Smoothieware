@@ -989,45 +989,32 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
         }
     }
 
-	ActuatorCoordinates actuator_pos;
+    ActuatorCoordinates actuator_pos;
+
+	arm_solution->cartesian_to_actuator( transformed_target, actuator_pos);
 	
-    arm_solution->cartesian_to_actuator( transformed_target, actuator_pos);
-    // Allow crossing 180 degree barrier
-    //float theta_target = actuator[ALPHA_STEPPER];
-	float alpha_target = actuator_pos[0];
-	float alpha_position = actuators[0]->get_current_position();
-	//THEKERNEL->streams->printf("ok Current: %f, Target: %f\n", alpha_position, alpha_target);
-	if (fabs(alpha_target-alpha_position) > 180)
-	{
-		//THEKERNEL->streams->printf("ok Current: %f, Target: %f\n", alpha_position, alpha_target);
-		if (alpha_target > 0)
+	// Allow crossing 180 degree barrier
+	//if (fabs(actuators[0]->get_current_position()) > 0) {
+		if (fabs(actuator_pos[0]-actuators[0]->get_current_position()) > 180)
 		{
-			alpha_target -= 360;
-			THEKERNEL->streams->printf("ok New target -360: %f, position: %f\n", alpha_target, alpha_position);
-		}
-		else 
-		{
-			alpha_target += 360;
-			THEKERNEL->streams->printf("ok New target +360: %f, position: %f\n", alpha_target, alpha_position);
-		}
-		actuators[0]->change_last_milestone(alpha_target);
-		
-		//arm_solution->actuator_to_cartesian( actuator_pos, transformed_target);
-	}
-	//actuator_pos[0]
-    // find actuator position given the machine position, use actual adjusted target
-
-    //ActuatorCoordinates actuator_pos;
-    //arm_solution->cartesian_to_actuator( transformed_target, actuator_pos);
-
-    // if y < 10; e *= 0.90
-    /*
-    if(actuator_pos[Y_AXIS] < 1) {
-        actuators[E_AXIS]->change_last_milestone(transformed_target[E_AXIS]);
-    }
-    */
-
-
+			//THEKERNEL->streams->printf("ok Current: %f, Target: %f\n", alpha_position, alpha_target);
+			//float a = actuator_pos[0];
+			if (actuator_pos[0] > 0)
+			{
+				actuator_pos[0] -= 360;
+				//THEKERNEL->streams->printf("ok O: %f, N-360: %f, T: %f\n", current_pos[0], actuator_pos[0], a);
+			}
+			else 
+			{
+				actuator_pos[0] += 360;
+				//THEKERNEL->streams->printf("ok O: %f, N+360: %f, T: %f\n", current_pos[0], actuator_pos[0], a);
+			}
+			//actuators[0]->change_last_milestone(actuator_pos[0]);
+			//reset_position_from_current_actuator_position();
+		}  
+	//}
+	
+	
 
 #if MAX_ROBOT_ACTUATORS > 3
     sos= 0;

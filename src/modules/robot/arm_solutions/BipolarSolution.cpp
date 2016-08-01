@@ -19,7 +19,7 @@
 
 #define PI 3.14159265358979323846F // force to be float, do not use M_PI
 //#define SQ(x) powf(x, 2)
-//#define ROUND(x, y) (roundf(x * (float)(1e ## y)) / (float)(1e ## y))
+#define ROUND(x, y) (roundf(x * (float)(1e ## y)) / (float)(1e ## y))
 #define arm_length_checksum          CHECKSUM("arm_length")
 
 BipolarSolution::BipolarSolution(Config* config)
@@ -55,8 +55,8 @@ void BipolarSolution::cartesian_to_actuator( const float cartesian_mm[], Actuato
 		float theta1_target = to_degrees(theta1);
 		float theta2_target = to_degrees(theta2);
 		//THEKERNEL->streams->printf("ok Current: %f, Target: %f\n", alpha_position, alpha_target);
-        actuator_mm[ALPHA_STEPPER] = theta1_target;
-        actuator_mm[BETA_STEPPER ] = theta2_target;
+        actuator_mm[ALPHA_STEPPER] = ROUND(theta1_target, 4);
+        actuator_mm[BETA_STEPPER ] = ROUND(theta2_target, 4);
         actuator_mm[GAMMA_STEPPER] = z;
 	}
 }
@@ -87,8 +87,8 @@ void BipolarSolution::actuator_to_cartesian( const ActuatorCoordinates &actuator
 		x = r * cosf(theta);
 		y = r * sinf(theta);
 		
-		cartesian_mm[ALPHA_STEPPER] = x;
-		cartesian_mm[BETA_STEPPER]  = y;
+		cartesian_mm[ALPHA_STEPPER] = ROUND(x, 4);
+		cartesian_mm[BETA_STEPPER]  = ROUND(y, 4);
 		cartesian_mm[GAMMA_STEPPER] = z;
 	}
 }
