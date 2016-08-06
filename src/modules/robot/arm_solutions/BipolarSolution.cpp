@@ -49,14 +49,28 @@ void BipolarSolution::cartesian_to_actuator( const float cartesian_mm[], Actuato
     else
     {
 		//Convert a set of cartesian coordinates (in mm) to bipolar coordinates (in degrees).
-		float theta2 = 2 * asinf(sqrtf(x*x+y*y) / (2 * arm_length) );
-		float theta1 = (PI-theta2)/2 - atan2f(y,x);
+		float theta2 = 2 * asin(sqrt(x*x+y*y) / (2 * arm_length) );
+		float theta1 = (M_PI-theta2)/2 - atan2(y,x);
 		//Convert from radians to degrees
 		float theta1_target = to_degrees(theta1);
 		float theta2_target = to_degrees(theta2);
 		//THEKERNEL->streams->printf("ok Current: %f, Target: %f\n", alpha_position, alpha_target);
-        actuator_mm[ALPHA_STEPPER] = ROUND(theta1_target, 4);
-        actuator_mm[BETA_STEPPER ] = ROUND(theta2_target, 4);
+        //actuator_mm[ALPHA_STEPPER] = ROUND(theta1_target, 4);
+        //actuator_mm[BETA_STEPPER ] = ROUND(theta2_target, 4);
+        /*
+        if (fabs(theta2_target) < 0.2f)
+        {
+			if(theta2_target > 0)
+			{
+				theta2_target = 0.2f;
+			}
+			else
+			{
+				theta2_target = -0.2f;
+			}
+		}*/
+        actuator_mm[ALPHA_STEPPER] = theta1_target;
+        actuator_mm[BETA_STEPPER ] = theta2_target;
         actuator_mm[GAMMA_STEPPER] = z;
 	}
 }
@@ -80,25 +94,27 @@ void BipolarSolution::actuator_to_cartesian( const ActuatorCoordinates &actuator
 		float theta2_rad = to_radians(y);
 
 		//Convert from bipolar to polar
-		float theta = ((PI-theta2_rad)/2) - theta1_rad;
-		float r = 2 * arm_length * sinf(theta2_rad/2);
+		float theta = ((M_PI-theta2_rad)/2) - theta1_rad;
+		float r = 2 * arm_length * sin(theta2_rad/2);
 
 		//Convert from polar to cartesian
-		x = r * cosf(theta);
-		y = r * sinf(theta);
+		x = r * cos(theta);
+		y = r * sin(theta);
 		
-		cartesian_mm[ALPHA_STEPPER] = ROUND(x, 4);
-		cartesian_mm[BETA_STEPPER]  = ROUND(y, 4);
+		//cartesian_mm[ALPHA_STEPPER] = ROUND(x, 4);
+		//cartesian_mm[BETA_STEPPER]  = ROUND(y, 4);
+		cartesian_mm[ALPHA_STEPPER] = x;
+		cartesian_mm[BETA_STEPPER]  = y;
 		cartesian_mm[GAMMA_STEPPER] = z;
 	}
 }
 
 float BipolarSolution::to_degrees(float radians) {
-    return radians * (180.0f/PI);
+    return radians * (180.0f/M_PI);
 }
 
 float BipolarSolution::to_radians(float degrees) {
-    return degrees * (PI/180.0f);
+    return degrees * (M_PI/180.0f);
 }
 
 bool BipolarSolution::set_optional(const arm_options_t& options)

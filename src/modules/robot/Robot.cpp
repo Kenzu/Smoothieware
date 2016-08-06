@@ -989,32 +989,26 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
         }
     }
 
+
     ActuatorCoordinates actuator_pos;
 
 	arm_solution->cartesian_to_actuator( transformed_target, actuator_pos);
 	
 	// Allow crossing 180 degree barrier
-	//if (fabs(actuators[0]->get_current_position()) > 0) {
-		if (fabs(actuator_pos[0]-actuators[0]->get_current_position()) > 180)
+	float alpha_distance = fabsf(actuator_pos[0] - actuators[0]->get_last_milestone());
+	float alpha_current_pos = actuators[0]->get_last_milestone();
+	if (alpha_distance > 180)
+	{
+		if (alpha_current_pos >= 0.0f)
 		{
-			//THEKERNEL->streams->printf("ok Current: %f, Target: %f\n", alpha_position, alpha_target);
-			//float a = actuator_pos[0];
-			if (actuator_pos[0] > 0)
-			{
-				actuator_pos[0] -= 360;
-				//THEKERNEL->streams->printf("ok O: %f, N-360: %f, T: %f\n", current_pos[0], actuator_pos[0], a);
-			}
-			else 
-			{
-				actuator_pos[0] += 360;
-				//THEKERNEL->streams->printf("ok O: %f, N+360: %f, T: %f\n", current_pos[0], actuator_pos[0], a);
-			}
-			//actuators[0]->change_last_milestone(actuator_pos[0]);
-			//reset_position_from_current_actuator_position();
-		}  
-	//}
-	
-	
+			alpha_current_pos -= 360.0f;
+		}
+		else 
+		{
+			alpha_current_pos += 360.0f;
+		}
+		actuators[0]->change_last_milestone(alpha_current_pos);
+	}  
 
 #if MAX_ROBOT_ACTUATORS > 3
     sos= 0;
@@ -1067,7 +1061,14 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
             }
         }
     }
-
+    /*
+    if (alpha_distance > 180)
+    {
+		float a_factor = distance / alpha_distance;
+		acceleration = acceleration / a_factor;
+		//rate_mm_s = rate_mm_s / a_factor;
+	}
+	*/
     // Append the block to the planner
     // NOTE that distance here should be either the distance travelled by the XYZ axis, or the E mm travel if a solo E move
     if(THEKERNEL->planner->append_block( actuator_pos, n_motors, rate_mm_s, distance, auxilliary_move ? nullptr : unit_vec, acceleration )) {
