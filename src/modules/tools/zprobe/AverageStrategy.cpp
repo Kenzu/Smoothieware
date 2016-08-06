@@ -296,10 +296,10 @@ bool AverageStrategy::doProbing(StreamOutput *stream)
         }
     }
 
-    //average = std::accumulate(z_values.begin(), z_values.end(), 0.0) / z_values.size();
+    average = std::accumulate(z_values.begin(), z_values.end(), 0.0) / z_values.size();
     //stream->printf("Average: %f\n", average);
     
-    average = median(z_values);
+    //average = median(z_values);
     stream->printf("Average: %f\n", average);
 
     if(fabs(average) > tolerance)

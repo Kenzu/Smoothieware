@@ -6,9 +6,9 @@ default_seek_rate                            600              # Default rate ( m
 #mm_max_arc_error                             0.01             # The maximum error for line segments that divide arcs 0 to disable
                                                               # note it is invalid for both the above be 0
                                                               # if both are used, will use largest segment length based on radius
-mm_per_line_segment                          0.1              # Lines can be cut into segments ( not usefull with cartesian
+#mm_per_line_segment                          0.1              # Lines can be cut into segments ( not usefull with cartesian
                                                               # coordinates robots ).
-#delta_segments_per_second                    100
+delta_segments_per_second                    50
 
 
 
@@ -20,9 +20,9 @@ gamma_steps_per_mm                           3200             # Steps per mm for
 
 # Planner module configuration : Look-ahead and acceleration configuration
 planner_queue_size                           32               # DO NOT CHANGE THIS UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING
-acceleration                                 720              # Acceleration in mm/second/second.
+acceleration                                 360              # Acceleration in mm/second/second.
 #z_acceleration                               150              # Acceleration for Z only moves in mm/s^2, 0 uses acceleration which is the default. DO NOT SET ON A DELTA
-junction_deviation                           0.00005          # Similar to the old "max_jerk", in millimeters,
+junction_deviation                           0.000001          # Similar to the old "max_jerk", in millimeters,
                                                               # see https://github.com/grbl/grbl/blob/master/planner.c
                                                               # and https://github.com/grbl/grbl/wiki/Configuring-Grbl-v0.8
                                                               # Lower values mean being more careful, higher values means being
@@ -44,13 +44,13 @@ alpha_step_pin                               1.22             # Pin for alpha st
 alpha_dir_pin                                1.21             # Pin for alpha stepper direction
 alpha_en_pin                                 1.23             # Pin for alpha enable pin
 #alpha_current                                1.5              # X stepper motor current
-alpha_max_rate                               10800.0          # mm/min
+alpha_max_rate                               7400.0          # mm/min
 
 beta_step_pin                                1.28             # Pin for beta stepper step signal
 beta_dir_pin                                 1.27!            # Pin for beta stepper direction
 beta_en_pin                                  1.29             # Pin for beta enable
 #beta_current                                 1.5              # Y stepper motor current
-beta_max_rate                                10800.0          # mm/min
+beta_max_rate                                7400.0          # mm/min
 
 gamma_step_pin                               1.19             # Pin for gamma stepper step signal
 gamma_dir_pin                                1.18             # Pin for gamma stepper direction
@@ -76,7 +76,7 @@ dfu_enable                                   false            # for linux develo
 
 ## Extruder module configuration
 extruder.hotend.enable                          true          # Whether to activate the extruder module at all. All configuration is ignored if false
-extruder.hotend.steps_per_mm                    150           # Steps per mm for extruder stepper
+extruder.hotend.steps_per_mm                    160           # Steps per mm for extruder stepper
 extruder.hotend.default_feed_rate               600           # Default rate ( mm/minute ) for moves where only the extruder moves
 extruder.hotend.acceleration                    5000          # Acceleration for the stepper motor mm/sec²
 extruder.hotend.max_speed                       40            # mm/s
@@ -107,8 +107,8 @@ temperature_control.hotend.d_factor         245               #
 
 temperature_control.hotend.max_pwm          255               # max pwm, 64 is a good value if driving a 12v resistor with 24v.
 temperature_control.hotend.i_max            255
-temperature_control.hotend.output_type      hwpwm
-temperature_control.hotend.pwm_period_ms	5
+temperature_control.hotend.output_type      pwm
+#temperature_control.hotend.pwm_period_ms	5
 #temperature_control.hotend.fail_safe_set_to 1
 
 # Base thermistor
@@ -119,9 +119,9 @@ temperature_control.system.heater_pin           nc            #
 #temperature_control.system.thermistor           Semitec       # see http://smoothieware.org/temperaturecontrol#toc5
 temperature_control.system.beta                 4250          # or set the beta value
 
-temperature_control.system.set_m_code           140           #
-temperature_control.system.set_and_wait_m_code  190           #
-temperature_control.system.designator           S             #
+#temperature_control.system.set_m_code           140           #
+#temperature_control.system.set_and_wait_m_code  190           #
+#temperature_control.system.designator           S             #
 
 #temperature_control.system.bang_bang            false         # set to true to use bang bang control rather than PID
 #temperature_control.system.hysteresis           2.0           # set to the temperature in degrees C to use as hysteresis
@@ -132,9 +132,9 @@ switch.fan.enable                            true             #
 switch.fan.input_on_command                  M106             #
 switch.fan.input_off_command                 M107             #
 switch.fan.output_pin                        2.2              #
-switch.fan.output_type                       hwpwm            # pwm output settable with S parameter in the input_on_comand
-#switch.fan.startup_value					 100
-switch.fan.pwm_period_ms					 2
+switch.fan.output_type                       pwm            # pwm output settable with S parameter in the input_on_comand
+#switch.fan.startup_value					 0
+#switch.fan.pwm_period_ms					 2
 #switch.fan.max_pwm                           255              # set max pwm for the pin default is 255
 
 # Base (system) fan
@@ -143,9 +143,10 @@ switch.system.enable                           true            #
 switch.system.input_on_command                 M42             #
 switch.system.input_off_command                M43             #
 switch.system.output_pin                       2.3             #
-switch.system.startup_value					   160	
+switch.system.startup_value					   100	
 switch.system.output_type                      hwpwm           # just an on or off pin
-switch.fan.pwm_period_ms					   2
+#switch.system.pwm_period_ms					   2
+#switch.system.max_pwm                          120             # set max pwm for the pin default is 255
 
 # Base (fan) auto-on
 #-------------------
@@ -200,15 +201,15 @@ zprobe.probe_height          9                  # how much above bed to start pr
 
 # associated with zprobe the leveling strategy to use
 leveling-strategy.average-leveling.enable         true        # a leveling strategy that probes three points to define a plane and keeps the Z parallel to that plane
-leveling-strategy.average-leveling.probe_points   3
+leveling-strategy.average-leveling.probe_points   5
 leveling-strategy.average-leveling.point0         0.0,67.0
-leveling-strategy.average-leveling.point1         120.0,67.0
-leveling-strategy.average-leveling.point2         240.0,67.0
-#leveling-strategy.average-leveling.point3         270.0,67.0
-#leveling-strategy.average-leveling.point4         180.0,67.0
+leveling-strategy.average-leveling.point1         72.0,67.0
+leveling-strategy.average-leveling.point2         144.0,67.0
+leveling-strategy.average-leveling.point3         216.0,67.0
+leveling-strategy.average-leveling.point4         288.0,67.0
 #leveling-strategy.average-leveling.point5         225.0,67.0
 #leveling-strategy.average-leveling.point6         270.0,67.0
 #leveling-strategy.average-leveling.point7         315.0,67.0
-leveling-strategy.average-leveling.probe_offsets  0,0,9.1       # the probe offsets from nozzle, must be x,y,z, default is no offset
+leveling-strategy.average-leveling.probe_offsets  0,0,9.5       # the probe offsets from nozzle, must be x,y,z, default is no offset
 leveling-strategy.average-leveling.tolerance      0.5
 leveling-strategy.average-leveling.point_tolerance  0.8

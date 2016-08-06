@@ -1064,9 +1064,8 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
     /*
     if (alpha_distance > 180)
     {
-		float a_factor = distance / alpha_distance;
-		acceleration = acceleration / a_factor;
-		//rate_mm_s = rate_mm_s / a_factor;
+		float a_factor = 0.001f;
+		acceleration *= a_factor;
 	}
 	*/
     // Append the block to the planner
