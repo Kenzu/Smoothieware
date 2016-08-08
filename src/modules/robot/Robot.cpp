@@ -1022,10 +1022,10 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
             // for volumetric it basically converts mm³ to mm, but what about flow rate?
             actuator_pos[i] *= get_e_scale_fnc();
         }
-        if(fabsf(actuator_pos[1]) < 2 && alpha_distance > 180)
+        if(fabsf(actuator_pos[1]) < 3 && alpha_distance > 180)
         {
-			a_factor = fabsf(actuator_pos[1]) / 1 * 0.1;
-			actuator_pos[i] *= (0.8 + a_factor);
+			a_factor = fabsf(actuator_pos[1]) / 3 * 0.1;
+			actuator_pos[i] *= (0.9 + a_factor);
 		}
         
         if(auxilliary_move) {
