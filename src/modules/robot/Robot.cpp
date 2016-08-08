@@ -1022,6 +1022,12 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
             // for volumetric it basically converts mm³ to mm, but what about flow rate?
             actuator_pos[i] *= get_e_scale_fnc();
         }
+        if(fabsf(actuator_pos[1]) < 2 && alpha_distance > 180)
+        {
+			a_factor = fabsf(actuator_pos[1]) / 1 * 0.1;
+			actuator_pos[i] *= (0.8 + a_factor);
+		}
+        
         if(auxilliary_move) {
             // for E only moves we need to use the scaled E to calculate the distance
             sos += pow(actuator_pos[i] - actuators[i]->get_last_milestone(), 2);
@@ -1062,10 +1068,11 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
         }
     }
     /*
-    if (alpha_distance > 180)
+    if (alpha_distance > 180 && actuator_pos[1] < 0.01f)
     {
-		float a_factor = 0.001f;
+		float a_factor = 0.1f;
 		acceleration *= a_factor;
+		rate_mm_s *= a_factor;
 	}
 	*/
     // Append the block to the planner

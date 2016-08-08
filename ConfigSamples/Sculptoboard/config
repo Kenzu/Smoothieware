@@ -8,7 +8,7 @@ default_seek_rate                            600              # Default rate ( m
                                                               # if both are used, will use largest segment length based on radius
 #mm_per_line_segment                          0.1              # Lines can be cut into segments ( not usefull with cartesian
                                                               # coordinates robots ).
-delta_segments_per_second                    50
+delta_segments_per_second                    25
 
 
 
@@ -20,9 +20,9 @@ gamma_steps_per_mm                           3200             # Steps per mm for
 
 # Planner module configuration : Look-ahead and acceleration configuration
 planner_queue_size                           32               # DO NOT CHANGE THIS UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING
-acceleration                                 360              # Acceleration in mm/second/second.
+acceleration                                 720              # Acceleration in mm/second/second.
 #z_acceleration                               150              # Acceleration for Z only moves in mm/s^2, 0 uses acceleration which is the default. DO NOT SET ON A DELTA
-junction_deviation                           0.000001          # Similar to the old "max_jerk", in millimeters,
+junction_deviation                           0.005              # Similar to the old "max_jerk", in millimeters,
                                                               # see https://github.com/grbl/grbl/blob/master/planner.c
                                                               # and https://github.com/grbl/grbl/wiki/Configuring-Grbl-v0.8
                                                               # Lower values mean being more careful, higher values means being
@@ -44,13 +44,13 @@ alpha_step_pin                               1.22             # Pin for alpha st
 alpha_dir_pin                                1.21             # Pin for alpha stepper direction
 alpha_en_pin                                 1.23             # Pin for alpha enable pin
 #alpha_current                                1.5              # X stepper motor current
-alpha_max_rate                               7400.0          # mm/min
+alpha_max_rate                               7200.0          # mm/min
 
 beta_step_pin                                1.28             # Pin for beta stepper step signal
 beta_dir_pin                                 1.27!            # Pin for beta stepper direction
 beta_en_pin                                  1.29             # Pin for beta enable
 #beta_current                                 1.5              # Y stepper motor current
-beta_max_rate                                7400.0          # mm/min
+beta_max_rate                                10800.0          # mm/min
 
 gamma_step_pin                               1.19             # Pin for gamma stepper step signal
 gamma_dir_pin                                1.18             # Pin for gamma stepper direction
@@ -58,13 +58,19 @@ gamma_en_pin                                 1.20             # Pin for gamma en
 #gamma_current                                1.5              # Z stepper motor current
 gamma_max_rate                               180.0            # mm/min
 
+switch.sleep.enable                   true #
+switch.sleep.input_on_command         M17  #
+switch.sleep.input_off_command        M18  #
+switch.sleep.output_pin               1.30  # GPIO pin we connected to sleep on drivers
+switch.sleep.output_type              digital        # just an on or off pin
+
 ## System configuration
 # Serial communications configuration ( baud rate defaults to 9600 if undefined )
-uart0.baud_rate                              115200           # Baud rate for the default hardware serial port
+uart0.baud_rate                              57600           # Baud rate for the default hardware serial port
 second_usb_serial_enable                     false            # This enables a second usb serial port (to have both pronterface
                                                               # and a terminal connected)
-leds_disable                                 false            # disable using leds after config loaded
-play_led_disable                             false            # disable the play led
+leds_disable                                 true            # disable using leds after config loaded
+play_led_disable                             true            # disable the play led
 
 # Kill button (used to be called pause) maybe assigned to a different pin, set to the onboard pin by default
 kill_button_enable                           true             # set to true to enable a kill button
@@ -76,7 +82,7 @@ dfu_enable                                   false            # for linux develo
 
 ## Extruder module configuration
 extruder.hotend.enable                          true          # Whether to activate the extruder module at all. All configuration is ignored if false
-extruder.hotend.steps_per_mm                    160           # Steps per mm for extruder stepper
+extruder.hotend.steps_per_mm                    150           # Steps per mm for extruder stepper
 extruder.hotend.default_feed_rate               600           # Default rate ( mm/minute ) for moves where only the extruder moves
 extruder.hotend.acceleration                    5000          # Acceleration for the stepper motor mm/sec²
 extruder.hotend.max_speed                       40            # mm/s
