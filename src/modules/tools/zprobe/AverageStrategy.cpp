@@ -60,6 +60,7 @@
 
 #define probe_points_checksum        CHECKSUM("probe_points")
 #define probe_offsets_checksum       CHECKSUM("probe_offsets")
+#define home_checksum                CHECKSUM("home_first")
 #define tolerance_checksum           CHECKSUM("tolerance")
 #define point_tolerance_checksum     CHECKSUM("point_tolerance")
 #define point_rejection_checksum     CHECKSUM("point_rejection")
@@ -111,6 +112,7 @@ bool AverageStrategy::handleConfig()
         }
     }
 
+	this->home= THEKERNEL->config->value(leveling_strategy_checksum, average_leveling_strategy_checksum, home_checksum)->by_default(true)->as_bool();
     // Probe offsets xxx,yyy,zzz
     std::string po = THEKERNEL->config->value(leveling_strategy_checksum, average_leveling_strategy_checksum, probe_offsets_checksum)->by_default("0,0,0")->as_string();
     this->probe_offsets= parseXYZ(po.c_str());
@@ -225,7 +227,10 @@ bool AverageStrategy::doProbing(StreamOutput *stream)
             return false;
         }
     }
-
+	// optionally home XY axis first, but allow for manual homing
+    if(this->home)
+        homeY();
+        
     // move to the first probe point
     std::tie(x, y) = probe_points.at(0);
     // offset by the probe XY offset
@@ -241,7 +246,7 @@ bool AverageStrategy::doProbing(StreamOutput *stream)
     // find bed via probe
     float mm;
     if(!zprobe->run_probe(mm)) return false;
-
+	stream->printf("DEBUG: PS:%1.4f\n", mm);
     // TODO if using probe then we probably need to set Z to 0 at first probe point, but take into account probe offset from head
     THEROBOT->reset_axis_position(/*std::get<Z_AXIS>(this->probe_offsets)*/0, Z_AXIS);
 
@@ -251,7 +256,7 @@ bool AverageStrategy::doProbing(StreamOutput *stream)
     // probe the three points
     std::vector<float> z_values;
     for (unsigned int i = 0; i < probe_points.size(); ++i) {
-        //for(unsigned int q = 0; q < 8; q++)
+        //for(unsigned int q = 0; q < 2; q++)
         {
             std::tie(x, y) = probe_points[i];
             // offset moves by the probe XY offset
@@ -262,10 +267,9 @@ bool AverageStrategy::doProbing(StreamOutput *stream)
             z_values.push_back(z);
         }
     }
+	
+	//stream->printf("Got: %d readings\n", z_values.size());
     
-    // TODO: Meanian and bad values
-    /*
-    stream->printf("Got: %d readings\n", z_values.size());
     z_values.erase(std::remove_if(z_values.begin(), z_values.end(), [&stream, this](float f)
     {
         if(fabs(f) > point_tolerance)
@@ -276,25 +280,16 @@ bool AverageStrategy::doProbing(StreamOutput *stream)
         else
         {
             return false;
-        }
+		}
     }), z_values.end());
-    stream->printf("Got: %d readings\n", z_values.size());
-
-    if(z_values.size() < probe_points.size() - point_rejection)
+    stream->printf("Got: %d good readings\n", z_values.size());
+	
+    if(z_values.size() < probe_points.size())
     {
-        stream->printf("Too many bad points!\n");
-        stream->printf("%d < %d - %d\n", z_values.size(), probe_points.size(), point_rejection);
-        return false;
+        stream->printf("Bed might be dirty or in bad shape\n");
+        //return false;
     }
-*/
-    for (float element : z_values)
-    {
-        if(fabs(element) > point_tolerance)
-        {
-            stream->printf("Dangerous outlier\n");
-            return false;
-        }
-    }
+ 
 
     average = std::accumulate(z_values.begin(), z_values.end(), 0.0) / z_values.size();
     //stream->printf("Average: %f\n", average);
@@ -302,15 +297,24 @@ bool AverageStrategy::doProbing(StreamOutput *stream)
     //average = median(z_values);
     stream->printf("Average: %f\n", average);
 
+
     if(fabs(average) > tolerance)
     {
         stream->printf("Average higher than tolerance: %f\n", tolerance);
-        return false;
+        //return false;
     }
 
-    THEROBOT->reset_axis_position(std::get<Z_AXIS>(this->probe_offsets)+average, Z_AXIS);
+    THEROBOT->reset_axis_position(zprobe->getProbeHeight() - average - std::get<Z_AXIS>(this->probe_offsets), Z_AXIS);
+    stream->printf("ZProbeHeight: %f\n", zprobe->getProbeHeight());
+    stream->printf("ZProbe offset: %f\n", std::get<Z_AXIS>(this->probe_offsets));
     stream->printf("Z position: %f\n", THEROBOT->get_axis_position(Z_AXIS));
     return true;
+}
+
+void AverageStrategy::homeY()
+{
+    Gcode gc("G28 Y", &(StreamOutput::NullStream));
+    THEKERNEL->call_event(ON_GCODE_RECEIVED, &gc);
 }
 
 // parse a "X,Y" string return x,y

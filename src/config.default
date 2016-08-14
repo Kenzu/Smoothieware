@@ -8,7 +8,7 @@ default_seek_rate                            600              # Default rate ( m
                                                               # if both are used, will use largest segment length based on radius
 #mm_per_line_segment                          0.1              # Lines can be cut into segments ( not usefull with cartesian
                                                               # coordinates robots ).
-delta_segments_per_second                    25
+delta_segments_per_second                    50
 
 
 
@@ -17,12 +17,13 @@ arm_solution                                 bipolar     	  # selects the delta 
 alpha_steps_per_mm                           31.1111111111    # (200*16*3.5)/360  # Steps per mm for alpha stepper
 beta_steps_per_mm                            40               # (200*16*4.5)/360  # Steps per mm for beta stepper
 gamma_steps_per_mm                           3200             # Steps per mm for gamma stepper
+arm_length									 110.5
 
 # Planner module configuration : Look-ahead and acceleration configuration
 planner_queue_size                           32               # DO NOT CHANGE THIS UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING
 acceleration                                 720              # Acceleration in mm/second/second.
 #z_acceleration                               150              # Acceleration for Z only moves in mm/s^2, 0 uses acceleration which is the default. DO NOT SET ON A DELTA
-junction_deviation                           0.005              # Similar to the old "max_jerk", in millimeters,
+junction_deviation                           0.001              # Similar to the old "max_jerk", in millimeters,
                                                               # see https://github.com/grbl/grbl/blob/master/planner.c
                                                               # and https://github.com/grbl/grbl/wiki/Configuring-Grbl-v0.8
                                                               # Lower values mean being more careful, higher values means being
@@ -59,10 +60,11 @@ gamma_en_pin                                 1.20             # Pin for gamma en
 gamma_max_rate                               180.0            # mm/min
 
 switch.sleep.enable                   true #
-switch.sleep.input_on_command         M17  #
-switch.sleep.input_off_command        M18  #
+#switch.sleep.input_on_command         M17  #
+#switch.sleep.input_off_command        M18  #
 switch.sleep.output_pin               1.30  # GPIO pin we connected to sleep on drivers
 switch.sleep.output_type              digital        # just an on or off pin
+switch.sleep.startup_state			  true
 
 ## System configuration
 # Serial communications configuration ( baud rate defaults to 9600 if undefined )
@@ -127,7 +129,7 @@ temperature_control.system.beta                 4250          # or set the beta 
 
 #temperature_control.system.set_m_code           140           #
 #temperature_control.system.set_and_wait_m_code  190           #
-#temperature_control.system.designator           S             #
+temperature_control.system.designator           S             #
 
 #temperature_control.system.bang_bang            false         # set to true to use bang bang control rather than PID
 #temperature_control.system.hysteresis           2.0           # set to the temperature in degrees C to use as hysteresis
@@ -149,7 +151,7 @@ switch.system.enable                           true            #
 switch.system.input_on_command                 M42             #
 switch.system.input_off_command                M43             #
 switch.system.output_pin                       2.3             #
-switch.system.startup_value					   100	
+switch.system.startup_value					   50	
 switch.system.output_type                      hwpwm           # just an on or off pin
 #switch.system.pwm_period_ms					   2
 #switch.system.max_pwm                          120             # set max pwm for the pin default is 255
@@ -161,26 +163,28 @@ temperatureswitch.system.designator          S                 # first character
 temperatureswitch.system.switch              system            # select which switch to use, matches the name of the defined switch
 temperatureswitch.system.threshold_temp      40.0              # temperature to turn on (if rising) or off the switch
 temperatureswitch.system.heatup_poll         15                # poll heatup at 15 sec intervals
-temperatureswitch.system.cooldown_poll       60                # poll cooldown at 60 sec intervals
+temperatureswitch.system.cooldown_poll       180                # poll cooldown at 60 sec intervals
 
 # Endstops
 #---------
 endstops_enable                              true              # the endstop module is enabled by default and can be disabled here
+move_to_origin_after_home					 true
 alpha_min_endstop                            nc                # add a ! to invert if endstop is NO connected to ground
 alpha_max_endstop                            nc                # NOTE set to nc if this is not installed
-alpha_homing_direction                       home_to_min       # or set to home_to_max and set alpha_max
+#alpha_homing_direction                       home_to_min       # or set to home_to_max and set alpha_max
 alpha_min                                    0                 # this gets loaded after homing when home_to_min is set
 alpha_max                                    10000             # this gets loaded after homing when home_to_max is set
+alpha_limit_enable							 true	
 beta_min_endstop                             nc                #
 beta_max_endstop                             3.25!             #
 beta_homing_direction                        home_to_max       #
 beta_min                                     0                 #
-beta_max                                     200               #
+beta_max                                     70                #
 gamma_min_endstop                            3.26              #
 gamma_max_endstop                            nc                #
 gamma_homing_direction                       home_to_min       #
 gamma_min                                    0                 #
-gamma_max                                    200               #
+gamma_max                                    170               #
 
 alpha_fast_homing_rate_mm_s                  25                # feedrates in mm/second
 beta_fast_homing_rate_mm_s                   25                # "
@@ -201,21 +205,33 @@ endstop_debounce_count                       100               # uncomment if yo
 zprobe.enable                true               # set to true to enable a zprobe
 zprobe.probe_pin             3.26^           
 zprobe.slow_feedrate         5                  # mm/sec probe feed rate
+#zprobe.debounce_ms	         1
 zprobe.debounce_count        100                # set if noisy
 zprobe.fast_feedrate         100                # move feedrate
-zprobe.probe_height          9                  # how much above bed to start probe NB only needed for G32 on delta
+zprobe.probe_height          5                  # how much above bed to start probe NB only needed for G32 on delta
+
+#leveling-strategy.three-point-leveling.enable			true
+#leveling-strategy.three-point-leveling.home_first		true
+#leveling-strategy.three-point-leveling.point1			0.0,70.0
+#leveling-strategy.three-point-leveling.point2			120.0,70.0
+#leveling-strategy.three-point-leveling.point3			240.0,70.0
+
+#leveling-strategy.three-point-leveling.tolerance		0.5
+#leveling-strategy.three-point-leveling.probe_offsets	0,0,0
+#leveling-strategy.three-point-leveling.save_plane		false
 
 # associated with zprobe the leveling strategy to use
 leveling-strategy.average-leveling.enable         true        # a leveling strategy that probes three points to define a plane and keeps the Z parallel to that plane
-leveling-strategy.average-leveling.probe_points   5
-leveling-strategy.average-leveling.point0         0.0,67.0
-leveling-strategy.average-leveling.point1         72.0,67.0
-leveling-strategy.average-leveling.point2         144.0,67.0
-leveling-strategy.average-leveling.point3         216.0,67.0
-leveling-strategy.average-leveling.point4         288.0,67.0
-#leveling-strategy.average-leveling.point5         225.0,67.0
+leveling-strategy.average-leveling.home_first	  true
+leveling-strategy.average-leveling.probe_points   6
+leveling-strategy.average-leveling.point0         0.0,68.0
+leveling-strategy.average-leveling.point1         60.0,68.0
+leveling-strategy.average-leveling.point2         120.0,68.0
+leveling-strategy.average-leveling.point3         180.0,68.0
+leveling-strategy.average-leveling.point4         240.0,68.0
+leveling-strategy.average-leveling.point5         300.0,68.0
 #leveling-strategy.average-leveling.point6         270.0,67.0
 #leveling-strategy.average-leveling.point7         315.0,67.0
-leveling-strategy.average-leveling.probe_offsets  0,0,9.5       # the probe offsets from nozzle, must be x,y,z, default is no offset
-leveling-strategy.average-leveling.tolerance      0.5
-leveling-strategy.average-leveling.point_tolerance  0.8
+leveling-strategy.average-leveling.probe_offsets  0,0,0       # the probe offsets from nozzle, must be x,y,z, default is no offset
+leveling-strategy.average-leveling.tolerance      0.4
+leveling-strategy.average-leveling.point_tolerance  0.6

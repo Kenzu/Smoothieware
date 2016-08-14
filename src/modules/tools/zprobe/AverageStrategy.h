@@ -32,6 +32,7 @@ private:
     bool doProbing(StreamOutput *stream);
     std::tuple<float, float> parseXY(const char *str);
     std::tuple<float, float, float> parseXYZ(const char *str);
+    void homeY();
 
     // The points we need to probe
     std::vector<std::tuple<float, float>> probe_points;
@@ -42,6 +43,7 @@ private:
 
     float tolerance;
     float point_tolerance;
+    bool home;
 
     int point_rejection;
 };

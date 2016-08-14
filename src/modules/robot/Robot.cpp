@@ -997,15 +997,21 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
 	// Allow crossing 180 degree barrier
 	float alpha_distance = fabsf(actuator_pos[0] - actuators[0]->get_last_milestone());
 	float alpha_current_pos = actuators[0]->get_last_milestone();
-	if (alpha_distance > 180)
+	if (alpha_distance >= 180.0f)
 	{
 		if (alpha_current_pos >= 0.0f)
 		{
-			alpha_current_pos -= 360.0f;
+			while (alpha_current_pos >= 0.0f)
+			{
+				alpha_current_pos -= 360.0f;
+			}
 		}
 		else 
 		{
-			alpha_current_pos += 360.0f;
+			while (alpha_current_pos < 0.0f)
+			{
+				alpha_current_pos += 360.0f;
+			}
 		}
 		actuators[0]->change_last_milestone(alpha_current_pos);
 	}  
@@ -1022,10 +1028,13 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
             // for volumetric it basically converts mm³ to mm, but what about flow rate?
             actuator_pos[i] *= get_e_scale_fnc();
         }
-        if(fabsf(actuator_pos[1]) < 3 && alpha_distance > 180)
+        if(fabsf(actuator_pos[1]) < 2.8f && fabsf(actuator_pos[i]) > 0)
         {
-			a_factor = fabsf(actuator_pos[1]) / 3 * 0.1;
-			actuator_pos[i] *= (0.9 + a_factor);
+			//float e_distance = fabsf(actuator_pos[i] - actuators[i]->get_last_milestone());
+			//float e_current_pos = actuators[i]->get_last_milestone();
+			float e_factor = - fabsf(actuator_pos[1]) + 2.8f;
+			actuator_pos[i] -= e_factor;
+			//THEKERNEL->streams->printf("ok ET : %f, EC: %f, EF: %f, ED: %f\n",actuator_pos[i], e_current_pos, e_factor, e_distance);
 		}
         
         if(auxilliary_move) {
