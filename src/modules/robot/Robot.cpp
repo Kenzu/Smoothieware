@@ -999,9 +999,9 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
 	float alpha_current_pos = actuators[0]->get_last_milestone();
 	if (alpha_distance >= 180.0f)
 	{
-		if (alpha_current_pos >= 0.0f)
+		if (alpha_current_pos > 0.0f)
 		{
-			while (alpha_current_pos >= 0.0f)
+			while (alpha_current_pos > 0.0f)
 			{
 				alpha_current_pos -= 360.0f;
 			}
@@ -1028,11 +1028,11 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
             // for volumetric it basically converts mm³ to mm, but what about flow rate?
             actuator_pos[i] *= get_e_scale_fnc();
         }
-        if(fabsf(actuator_pos[1]) < 2.8f && fabsf(actuator_pos[i]) > 0)
+        if(fabsf(actuator_pos[1]) < 2.0f && fabsf(actuator_pos[i]) > 0)
         {
 			//float e_distance = fabsf(actuator_pos[i] - actuators[i]->get_last_milestone());
 			//float e_current_pos = actuators[i]->get_last_milestone();
-			float e_factor = - fabsf(actuator_pos[1]) + 2.8f;
+			float e_factor = - fabsf(actuator_pos[1]) + 2.0f;
 			actuator_pos[i] -= e_factor;
 			//THEKERNEL->streams->printf("ok ET : %f, EC: %f, EF: %f, ED: %f\n",actuator_pos[i], e_current_pos, e_factor, e_distance);
 		}
