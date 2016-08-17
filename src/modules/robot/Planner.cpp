@@ -22,6 +22,7 @@ using namespace std;
 #include "checksumm.h"
 #include "Robot.h"
 #include "ConfigValue.h"
+#include "StreamOutputPool.h"
 
 #include <math.h>
 #include <algorithm>
@@ -57,37 +58,7 @@ bool Planner::append_block( ActuatorCoordinates &actuator_pos, uint8_t n_motors,
 
     // Direction bits
     bool has_steps= false;
-    /*
-    {
-        int32_t HALF_CIRCLE_STEPS = THEROBOT->actuators[0]->steps_per_mm * 180;
-        int32_t steps = THEROBOT->actuators[0]->steps_to_target(actuator_pos[0]);
-        if(steps != 0) {
-            if(steps > HALF_CIRCLE_STEPS)
-            {
-                if(THEROBOT->actuators[0]->last_milestone_steps > 0)
-                {
-                    THEROBOT->actuators[0]->update_last_milestones(actuator_pos[0], -(HALF_CIRCLE_STEPS*2));
-                }
-                else
-                {
-                    THEROBOT->actuators[0]->update_last_milestones(actuator_pos[0], (HALF_CIRCLE_STEPS*2));
-                }
-            }
-            steps = THEROBOT->actuators[0]->steps_to_target(actuator_pos[0]);
-        }
 
-        // Update current position
-        if(steps != 0) {
-            THEROBOT->actuators[0]->update_last_milestones(actuator_pos[0], steps);
-            has_steps= true;
-        }
-
-        // find direction
-        block->direction_bits[0] = (steps < 0) ? 1 : 0;
-        // save actual steps in block
-        block->steps[0] = labs(steps);
-    }
-*/
     for (size_t i = 0; i < n_motors; i++) {
         int32_t steps = THEROBOT->actuators[i]->steps_to_target(actuator_pos[i]);
         // Update current position
@@ -167,9 +138,10 @@ bool Planner::append_block( ActuatorCoordinates &actuator_pos, uint8_t n_motors,
             float cos_theta = - this->previous_unit_vec[X_AXIS] * unit_vec[X_AXIS]
                               - this->previous_unit_vec[Y_AXIS] * unit_vec[Y_AXIS]
                               - this->previous_unit_vec[Z_AXIS] * unit_vec[Z_AXIS] ;
-
+			//THEKERNEL->streams->printf("cos_theta = %f\n", cos_theta);
             // Skip and use default max junction speed for 0 degree acute junction.
             if (cos_theta < 0.95F) {
+				//THEKERNEL->streams->printf("cos_theta = %f\n", cos_theta);
                 vmax_junction = std::min(previous_nominal_speed, block->nominal_speed);
                 // Skip and avoid divide by zero for straight junctions at 180 degrees. Limit to min() of nominal speeds.
                 if (cos_theta > -0.95F) {

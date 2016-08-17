@@ -55,10 +55,8 @@ void BipolarSolution::cartesian_to_actuator( const float cartesian_mm[], Actuato
 		float theta1_target = to_degrees(theta1);
 		float theta2_target = to_degrees(theta2);
 		//THEKERNEL->streams->printf("ok Current: %f, Target: %f\n", alpha_position, alpha_target);
-        //actuator_mm[ALPHA_STEPPER] = ROUND(theta1_target, 4);
-        //actuator_mm[BETA_STEPPER ] = ROUND(theta2_target, 4);
         /*
-        if (fabs(theta2_target) < 0.2f)
+        if (fabsf(theta2_target) < 0.20f)
         {
 			if(theta2_target > 0)
 			{
@@ -68,9 +66,12 @@ void BipolarSolution::cartesian_to_actuator( const float cartesian_mm[], Actuato
 			{
 				theta2_target = -0.2f;
 			}
-		}*/
-        actuator_mm[ALPHA_STEPPER] = theta1_target;
-        actuator_mm[BETA_STEPPER ] = theta2_target;
+		}
+		*/
+        actuator_mm[ALPHA_STEPPER] = ROUND(theta1_target, 4);
+        actuator_mm[BETA_STEPPER ] = ROUND(theta2_target, 4);
+        //actuator_mm[ALPHA_STEPPER] = theta1_target;
+        //actuator_mm[BETA_STEPPER ] = theta2_target;
         actuator_mm[GAMMA_STEPPER] = z;
 	}
 }
@@ -101,10 +102,35 @@ void BipolarSolution::actuator_to_cartesian( const ActuatorCoordinates &actuator
 		x = r * cosf(theta);
 		y = r * sinf(theta);
 		
-		//cartesian_mm[ALPHA_STEPPER] = ROUND(x, 4);
-		//cartesian_mm[BETA_STEPPER]  = ROUND(y, 4);
-		cartesian_mm[ALPHA_STEPPER] = x;
-		cartesian_mm[BETA_STEPPER]  = y;
+		/*
+		if (fabsf(x) < 0.20f)
+		{
+			if(x > 0)
+			{
+				x = 0.20f;
+			}
+			else
+			{
+				x = -0.20f
+			}
+		}
+		if (fabsf(y) < 0.20f)
+		{
+			if(y > 0)
+			{
+				y = 0.20f;
+			}
+			else
+			{
+				y = -0.20f
+			}
+		}
+		*/
+		
+		cartesian_mm[ALPHA_STEPPER] = ROUND(x, 4);
+		cartesian_mm[BETA_STEPPER]  = ROUND(y, 4);
+		//cartesian_mm[ALPHA_STEPPER] = x;
+		//cartesian_mm[BETA_STEPPER]  = y;
 		cartesian_mm[GAMMA_STEPPER] = z;
 	}
 }

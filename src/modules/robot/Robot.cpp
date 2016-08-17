@@ -991,15 +991,16 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
 
 
     ActuatorCoordinates actuator_pos;
-
+    
 	arm_solution->cartesian_to_actuator( transformed_target, actuator_pos);
 	
 	// Allow crossing 180 degree barrier
 	float alpha_distance = fabsf(actuator_pos[0] - actuators[0]->get_last_milestone());
 	float alpha_current_pos = actuators[0]->get_last_milestone();
+	float alpha_speed = 0.0f;
 	if (alpha_distance >= 180.0f)
 	{
-		if (alpha_current_pos > 0.0f)
+		if (alpha_current_pos >= 0.0f)
 		{
 			while (alpha_current_pos > 0.0f)
 			{
@@ -1014,6 +1015,7 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
 			}
 		}
 		actuators[0]->change_last_milestone(alpha_current_pos);
+		alpha_speed = 5.0f;
 	}  
 
 #if MAX_ROBOT_ACTUATORS > 3
@@ -1057,13 +1059,20 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
     for (size_t actuator = 0; actuator < n_motors; actuator++) {
         float d = fabsf(actuator_pos[actuator] - actuators[actuator]->get_last_milestone());
         if(d == 0 || !actuators[actuator]->is_selected()) continue; // no movement for this actuator
+		
 
+		
         float actuator_rate= d * isecs;
         if (actuator_rate > actuators[actuator]->get_max_rate()) {
             rate_mm_s *= (actuators[actuator]->get_max_rate() / actuator_rate);
             isecs = rate_mm_s / distance;
         }
 
+		if (alpha_speed > 0)
+		{
+			THEKERNEL->streams->printf("speed = %f\n", rate_mm_s);
+			rate_mm_s = alpha_speed;			
+		}
         // adjust acceleration to lowest found, for now just primary axis unless it is an auxiliary move
         // TODO we may need to do all of them, check E won't limit XYZ.. it does on long E moves, but not checking it could exceed the E acceleration.
         if(auxilliary_move || actuator <= Z_AXIS) {
@@ -1076,14 +1085,6 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
             }
         }
     }
-    /*
-    if (alpha_distance > 180 && actuator_pos[1] < 0.01f)
-    {
-		float a_factor = 0.1f;
-		acceleration *= a_factor;
-		rate_mm_s *= a_factor;
-	}
-	*/
     // Append the block to the planner
     // NOTE that distance here should be either the distance travelled by the XYZ axis, or the E mm travel if a solo E move
     if(THEKERNEL->planner->append_block( actuator_pos, n_motors, rate_mm_s, distance, auxilliary_move ? nullptr : unit_vec, acceleration )) {
