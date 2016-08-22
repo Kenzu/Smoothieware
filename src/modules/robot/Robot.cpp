@@ -974,50 +974,55 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
     if(!auxilliary_move && distance < 0.00001F) return false;
 
 
-    if(!auxilliary_move) {
-         for (size_t i = X_AXIS; i <= Z_AXIS; i++) {
-            // find distance unit vector for primary axis only
-            unit_vec[i] = deltas[i] / distance;
 
-            // Do not move faster than the configured cartesian limits for XYZ
-            if ( max_speeds[i] > 0 ) {
-                float axis_speed = fabsf(unit_vec[i] * rate_mm_s);
-
-                if (axis_speed > max_speeds[i])
-                    rate_mm_s *= ( max_speeds[i] / axis_speed );
-            }
-        }
-    }
-
+	
 
     ActuatorCoordinates actuator_pos;
     
-	arm_solution->cartesian_to_actuator( transformed_target, actuator_pos);
-	
+    arm_solution->cartesian_to_actuator( transformed_target, actuator_pos);  
+    
 	// Allow crossing 180 degree barrier
 	float alpha_distance = fabsf(actuator_pos[0] - actuators[0]->get_last_milestone());
-	float alpha_current_pos = actuators[0]->get_last_milestone();
-	float alpha_speed = 0.0f;
-	if (alpha_distance >= 180.0f)
+	//float alpha_current_pos = actuators[0]->get_last_milestone();
+	//float alpha_target = actuator_pos[0];
+	
+	while (fabsf(actuator_pos[0] - actuators[0]->get_last_milestone()) > 180.0f)
 	{
-		if (alpha_current_pos >= 0.0f)
+		if (actuators[0]->get_last_milestone() >= 0.0f)
 		{
-			while (alpha_current_pos > 0.0f)
-			{
-				alpha_current_pos -= 360.0f;
-			}
+				actuator_pos[0] += 360.0f;
 		}
 		else 
 		{
-			while (alpha_current_pos < 0.0f)
-			{
-				alpha_current_pos += 360.0f;
-			}
+				actuator_pos[0] -= 360.0f;
 		}
-		actuators[0]->change_last_milestone(alpha_current_pos);
-		alpha_speed = 5.0f;
-	}  
-
+		//actuators[0]->change_last_milestone(alpha_current_pos);
+		//THEKERNEL->streams->printf("ok 180 - tar: %f, new_tar: %f, pos: %f, dis: %f\n", alpha_target, actuator_pos[0], actuators[0]->get_last_milestone(), alpha_distance);
+	}
+	
+	float bipol_delta[n_motors];
+	float bipol_sos = 0;
+	for (size_t i = X_AXIS; i <= Z_AXIS; i++) {
+        bipol_delta[i] = actuator_pos[i] - actuators[i]->get_last_milestone();
+        if(bipol_delta[i] == 0) continue;
+        // at least one non zero delta
+        bipol_sos += powf(bipol_delta[i], 2);
+    }
+    
+    float bipol_distance = auxilliary_move ? 0 : sqrtf(bipol_sos);
+	
+    if(!auxilliary_move) {
+        for (size_t i = X_AXIS; i <= Z_AXIS; i++) {
+            // find distance unit vector for primary axis only
+            unit_vec[i] = bipol_delta[i] / bipol_distance;
+			if(fabsf(unit_vec[i]) > 1)
+			{
+				THEKERNEL->streams->printf("ok delta: %f, distance: %f, unit_vec: %f\n", bipol_delta[i], bipol_distance, unit_vec[i]);
+			}
+        }
+        
+    }	  
+	
 #if MAX_ROBOT_ACTUATORS > 3
     sos= 0;
     // for the extruders just copy the position, and possibly scale it from mm³ to mm
@@ -1045,49 +1050,51 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
         }
     }
     if(auxilliary_move) {
-        distance= sqrtf(sos); // distance in mm of the e move
+        distance = sqrtf(sos); // distance in mm of the e move
         if(distance < 0.00001F) return false;
     }
 #endif
 
     // use default acceleration to start with
+    float center_speed_factor = 11;
     float acceleration = default_acceleration;
-
-    float isecs = rate_mm_s / distance;
+	float bipol_rate_mm_s = rate_mm_s * ((center_speed_factor -1) / (0 - 70) * actuator_pos[1] + center_speed_factor);
+    float isecs = bipol_rate_mm_s / bipol_distance;
 
     // check per-actuator speed limits
     for (size_t actuator = 0; actuator < n_motors; actuator++) {
         float d = fabsf(actuator_pos[actuator] - actuators[actuator]->get_last_milestone());
         if(d == 0 || !actuators[actuator]->is_selected()) continue; // no movement for this actuator
 		
-
+		
 		
         float actuator_rate= d * isecs;
         if (actuator_rate > actuators[actuator]->get_max_rate()) {
-            rate_mm_s *= (actuators[actuator]->get_max_rate() / actuator_rate);
-            isecs = rate_mm_s / distance;
+            bipol_rate_mm_s *= (actuators[actuator]->get_max_rate() / actuator_rate);
+            isecs = bipol_rate_mm_s / bipol_distance;
         }
-
-		if (alpha_speed > 0)
-		{
-			THEKERNEL->streams->printf("speed = %f\n", rate_mm_s);
-			rate_mm_s = alpha_speed;			
-		}
+		
         // adjust acceleration to lowest found, for now just primary axis unless it is an auxiliary move
         // TODO we may need to do all of them, check E won't limit XYZ.. it does on long E moves, but not checking it could exceed the E acceleration.
         if(auxilliary_move || actuator <= Z_AXIS) {
             float ma =  actuators[actuator]->get_acceleration(); // in mm/sec²
             if(!isnan(ma)) {  // if axis does not have acceleration set then it uses the default_acceleration
-                float ca = fabsf((d/distance) * acceleration);
+                float ca = fabsf((d/bipol_distance) * acceleration);
                 if (ca > ma) {
                     acceleration *= ( ma / ca );
                 }
             }
         }
+        /*
+        if(alpha_distance > 180)
+		{
+			THEKERNEL->streams->printf("ok a_d: %f, d: %f, r_mm_s: %f, accel: %f, u_v: %f\n", alpha_distance, d, rate_mm_s, acceleration, unit_vec[0]);
+		}
+		*/
     }
     // Append the block to the planner
     // NOTE that distance here should be either the distance travelled by the XYZ axis, or the E mm travel if a solo E move
-    if(THEKERNEL->planner->append_block( actuator_pos, n_motors, rate_mm_s, distance, auxilliary_move ? nullptr : unit_vec, acceleration )) {
+    if(THEKERNEL->planner->append_block( actuator_pos, n_motors, bipol_rate_mm_s, bipol_distance, auxilliary_move ? nullptr : unit_vec, acceleration )) {
         // this is the machine position
         memcpy(this->last_machine_position, transformed_target, n_motors*sizeof(float));
         return true;
@@ -1142,7 +1149,7 @@ bool Robot::append_line(Gcode *gcode, const float target[], float rate_mm_s, flo
         // we have no movement in XYZ, probably E only extrude or retract
         return this->append_milestone(target, rate_mm_s);
     }
-
+	
     /*
         For extruders, we need to do some extra work...
         if we have volumetric limits enabled we calculate the volume for this move and limit the rate if it exceeds the stated limit.

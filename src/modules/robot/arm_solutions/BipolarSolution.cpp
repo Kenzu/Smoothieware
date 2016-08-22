@@ -51,27 +51,17 @@ void BipolarSolution::cartesian_to_actuator( const float cartesian_mm[], Actuato
 		//Convert a set of cartesian coordinates (in mm) to bipolar coordinates (in degrees).
 		float theta2 = 2 * asinf(sqrtf(x*x+y*y) / (2 * arm_length) );
 		float theta1 = (PI-theta2)/2 - atan2f(y,x);
+		
 		//Convert from radians to degrees
 		float theta1_target = to_degrees(theta1);
 		float theta2_target = to_degrees(theta2);
-		//THEKERNEL->streams->printf("ok Current: %f, Target: %f\n", alpha_position, alpha_target);
-        /*
-        if (fabsf(theta2_target) < 0.20f)
-        {
-			if(theta2_target > 0)
-			{
-				theta2_target = 0.2f;
-			}
-			else
-			{
-				theta2_target = -0.2f;
-			}
-		}
-		*/
-        actuator_mm[ALPHA_STEPPER] = ROUND(theta1_target, 4);
-        actuator_mm[BETA_STEPPER ] = ROUND(theta2_target, 4);
-        //actuator_mm[ALPHA_STEPPER] = theta1_target;
-        //actuator_mm[BETA_STEPPER ] = theta2_target;
+		
+		//theta2_target = max(theta2_target,3.0f);
+		
+		//Write to actuators
+        //actuator_mm[ALPHA_STEPPER] = theta1_target - 90.0f;
+        actuator_mm[ALPHA_STEPPER] = theta1_target;
+        actuator_mm[BETA_STEPPER ] = theta2_target;
         actuator_mm[GAMMA_STEPPER] = z;
 	}
 }
@@ -102,35 +92,9 @@ void BipolarSolution::actuator_to_cartesian( const ActuatorCoordinates &actuator
 		x = r * cosf(theta);
 		y = r * sinf(theta);
 		
-		/*
-		if (fabsf(x) < 0.20f)
-		{
-			if(x > 0)
-			{
-				x = 0.20f;
-			}
-			else
-			{
-				x = -0.20f
-			}
-		}
-		if (fabsf(y) < 0.20f)
-		{
-			if(y > 0)
-			{
-				y = 0.20f;
-			}
-			else
-			{
-				y = -0.20f
-			}
-		}
-		*/
-		
-		cartesian_mm[ALPHA_STEPPER] = ROUND(x, 4);
-		cartesian_mm[BETA_STEPPER]  = ROUND(y, 4);
-		//cartesian_mm[ALPHA_STEPPER] = x;
-		//cartesian_mm[BETA_STEPPER]  = y;
+		//Write to actuators
+		cartesian_mm[ALPHA_STEPPER] = x;
+		cartesian_mm[BETA_STEPPER]  = y;
 		cartesian_mm[GAMMA_STEPPER] = z;
 	}
 }

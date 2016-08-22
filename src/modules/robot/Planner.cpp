@@ -22,7 +22,6 @@ using namespace std;
 #include "checksumm.h"
 #include "Robot.h"
 #include "ConfigValue.h"
-#include "StreamOutputPool.h"
 
 #include <math.h>
 #include <algorithm>
@@ -138,10 +137,9 @@ bool Planner::append_block( ActuatorCoordinates &actuator_pos, uint8_t n_motors,
             float cos_theta = - this->previous_unit_vec[X_AXIS] * unit_vec[X_AXIS]
                               - this->previous_unit_vec[Y_AXIS] * unit_vec[Y_AXIS]
                               - this->previous_unit_vec[Z_AXIS] * unit_vec[Z_AXIS] ;
-			//THEKERNEL->streams->printf("cos_theta = %f\n", cos_theta);
+
             // Skip and use default max junction speed for 0 degree acute junction.
             if (cos_theta < 0.95F) {
-				//THEKERNEL->streams->printf("cos_theta = %f\n", cos_theta);
                 vmax_junction = std::min(previous_nominal_speed, block->nominal_speed);
                 // Skip and avoid divide by zero for straight junctions at 180 degrees. Limit to min() of nominal speeds.
                 if (cos_theta > -0.95F) {
