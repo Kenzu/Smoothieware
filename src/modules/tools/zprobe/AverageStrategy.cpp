@@ -246,7 +246,7 @@ bool AverageStrategy::doProbing(StreamOutput *stream)
     // find bed via probe
     float mm;
     if(!zprobe->run_probe(mm)) return false;
-	stream->printf("DEBUG: PS:%1.4f\n", mm);
+	stream->printf("DEBUG: PREF:%1.4f\n", mm);
     // TODO if using probe then we probably need to set Z to 0 at first probe point, but take into account probe offset from head
     THEROBOT->reset_axis_position(/*std::get<Z_AXIS>(this->probe_offsets)*/0, Z_AXIS);
 
@@ -263,7 +263,7 @@ bool AverageStrategy::doProbing(StreamOutput *stream)
             float z = zprobe->probeDistance(x-std::get<X_AXIS>(this->probe_offsets), y-std::get<Y_AXIS>(this->probe_offsets));
             if(isnan(z)) return false; // probe failed
             z = zprobe->getProbeHeight() - z; // relative distance between the probe points, lower is negative z
-            stream->printf("DEBUG: P%d:%1.4f\n", i, z);
+            stream->printf("DEBUG: P%d  :%1.4f\n", i, z);
             z_values.push_back(z);
         }
     }
