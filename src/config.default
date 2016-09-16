@@ -21,9 +21,9 @@ gamma_steps_per_mm                           3200             # Steps per mm for
 
 # Planner module configuration : Look-ahead and acceleration configuration
 planner_queue_size                           32               # DO NOT CHANGE THIS UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING
-acceleration                                 720              # Acceleration in mm/second/second.
+acceleration                                 1440              # Acceleration in mm/second/second.
 #z_acceleration                               150              # Acceleration for Z only moves in mm/s^2, 0 uses acceleration which is the default. DO NOT SET ON A DELTA
-junction_deviation                           0.01          # Similar to the old "max_jerk", in millimeters,
+junction_deviation                           0.0001          # Similar to the old "max_jerk", in millimeters,
                                                               # see https://github.com/grbl/grbl/blob/master/planner.c
                                                               # and https://github.com/grbl/grbl/wiki/Configuring-Grbl-v0.8
                                                               # Lower values mean being more careful, higher values means being
@@ -52,7 +52,7 @@ beta_step_pin                                1.28             # Pin for beta ste
 beta_dir_pin                                 1.27!            # Pin for beta stepper direction
 beta_en_pin                                  1.29             # Pin for beta enable
 #beta_current                                 1.5              # Y stepper motor current
-beta_max_rate                                7200.0          # mm/min
+beta_max_rate                                5400.0          # mm/min
 
 gamma_step_pin                               1.19             # Pin for gamma stepper step signal
 gamma_dir_pin                                1.18             # Pin for gamma stepper direction

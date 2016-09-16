@@ -936,7 +936,7 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
     float deltas[n_motors];
     float bipol_deltas[n_motors];
     float transformed_target[n_motors]; // adjust target for bed compensation
-    float unit_vec[N_PRIMARY_AXIS];
+    //float unit_vec[N_PRIMARY_AXIS];
     float bipol_unit_vec[N_PRIMARY_AXIS];
 
     // unity transform by default
@@ -1005,7 +1005,7 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
     if(!auxilliary_move) {
         for (size_t i = X_AXIS; i <= Z_AXIS; i++) {
             // find distance unit vector for primary axis only
-            unit_vec[i] = deltas[i] / distance;
+            //unit_vec[i] = deltas[i] / distance;
             bipol_unit_vec[i] = bipol_deltas[i] / bipol_distance;
 			if(fabsf(bipol_unit_vec[i]) > 1)
 			{
@@ -1016,7 +1016,7 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
     }	  
 	
 #if MAX_ROBOT_ACTUATORS > 3
-    sos= 0;
+    bipol_sos= 0;
     // for the extruders just copy the position, and possibly scale it from mm³ to mm
     for (size_t i = E_AXIS; i < n_motors; i++) {
         actuator_pos[i]= transformed_target[i];
@@ -1038,31 +1038,33 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
         
         if(auxilliary_move) {
             // for E only moves we need to use the scaled E to calculate the distance
-            sos += pow(actuator_pos[i] - actuators[i]->get_last_milestone(), 2);
+            bipol_sos += pow(actuator_pos[i] - actuators[i]->get_last_milestone(), 2);
         }
     }
     if(auxilliary_move) {
-        distance = sqrtf(sos); // distance in mm of the e move
-        if(distance < 0.00001F) return false;
+        bipol_distance = sqrtf(bipol_sos); // distance in mm of the e move
+        if(bipol_distance < 0.00001F) return false;
     }
 #endif
 
     // use default acceleration to start with
     float acceleration = default_acceleration;
-    float isecs = rate_mm_s / distance;
-    //float bipol_acceleration = default_acceleration;
-    float bipol_rate_mm_s = rate_mm_s * 1.0f/((actuator_pos[1]*(110.0f*2.0f*PI/360.0f))*2.0f*PI/360.0f);
-    //float bipol_arm_rate_mm_s = rate_mm_s * 1.0f/(110.0f*2.0f*PI/360.0f);
-    float bipol_isecs = bipol_rate_mm_s / bipol_distance;
+    distance = bipol_distance;
+    float bed_distance = fabsf(actuator_pos[0] - actuators[0]->get_last_milestone());
+    float arm_distance = fabsf(actuator_pos[1] - actuators[1]->get_last_milestone());
+    float bed_rate_mm_s = min((rate_mm_s * 1.0f/((actuator_pos[1]*(110.0f*2.0f*PI/360.0f))*2.0f*PI/360.0f)), actuators[0]->get_max_rate());
+    float arm_rate_mm_s = rate_mm_s * 1.0f/(110.0f*2.0f*PI/360.0f);
+    //float bed_isecs = bed_rate_mm_s / bed_distance;
+    //float arm_isecs = arm_rate_mm_s / arm_distance;
+    float mix_scale = (bed_distance / 360.0f) / ((arm_distance / 60.0f) + (bed_distance / 360.0f));
     
-    if(isecs > bipol_isecs && fabsf(actuator_pos[1]) < 10.0f && alpha_distance > 0.0f)
+    if(bed_distance > 0.0f && arm_distance > 0.0f)
     {
-		float start_rate = rate_mm_s;
-		rate_mm_s *= bipol_rate_mm_s;
-		distance = bipol_distance;
-		THEKERNEL->streams->printf("isecs: %f, bipol_isec: %f, start_mm_s: %f, rate_mm_s: %f\n", isecs, bipol_isecs, start_rate, rate_mm_s);
+		rate_mm_s = (bed_rate_mm_s * mix_scale) + (arm_rate_mm_s * (1.0f - mix_scale));
+		//THEKERNEL->streams->printf("ok rate_mm_s: %f, bed_max: %f\n",rate_mm_s, actuators[0]->get_max_rate());
 	}
 
+    float isecs = rate_mm_s / distance;
     // check per-actuator speed limits
     for (size_t actuator = 0; actuator < n_motors; actuator++) {
         float d = fabsf(actuator_pos[actuator] - actuators[actuator]->get_last_milestone());
@@ -1087,19 +1089,11 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
         }
 
     }
-	
-	/*
-	if(rate_mm_s > actuators[0]->get_max_rate())
-	{
-		rate_mm_s = bipol_rate_mm_s;
-		distance = bipol_distance;
-	}
-    */
     /*
     if(alpha_distance > 45)
 	{
-		//THEKERNEL->streams->printf("distance: %f, r_mm_s: %f, accel: %f, u_v: %f\n", distance, rate_mm_s, acceleration, unit_vec[0]);
-		THEKERNEL->streams->printf("distance: %f, r_mm_s: %f, accel: %f, bipol_u_v: %f\n", distance, rate_mm_s, acceleration, bipol_unit_vec[0]);
+		THEKERNEL->streams->printf("distance: %f, r_mm_s: %f, u_v: %f, isecs: %f\n", distance, rate_mm_s, unit_vec[0], isecs);
+		//THEKERNEL->streams->printf("bipol_distance: %f, bipol_r_mm_s: %f, bipol_u_v: %f, bipol_isecs: %f\n", bipol_distance, bipol_rate_mm_s, bipol_unit_vec[0], bipol_isecs);
 	}
 	*/
     // Append the block to the planner
